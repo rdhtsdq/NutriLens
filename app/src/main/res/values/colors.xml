@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Risk level colors -->
+    <color name="risk_low_bg">#FFDCEDC8</color>
+    <color name="risk_low_text">#FF33691E</color>
+    <color name="risk_medium_bg">#FFFFF9C4</color>
+    <color name="risk_medium_text">#FFF57F17</color>
+    <color name="risk_high_bg">#FFFFCDD2</color>
+    <color name="risk_high_text">#FFC62828</color>
+
+    <!-- Calorie card -->
+    <color name="calorie_track">#FFE0E0E0</color>
+</resources>
