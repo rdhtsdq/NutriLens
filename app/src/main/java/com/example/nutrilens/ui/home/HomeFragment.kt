@@ -9,7 +9,9 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DividerItemDecoration
+import com.example.nutrilens.R
 import com.example.nutrilens.databinding.FragmentHomeBinding
 import kotlinx.coroutines.launch
 
@@ -41,6 +43,13 @@ class HomeFragment : Fragment() {
             DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL)
         )
 
+        binding.addFoodFab.setOnClickListener {
+            val args = Bundle().apply {
+                putString("foodName", "")
+            }
+            findNavController().navigate(R.id.manualInputFragment, args)
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -54,9 +63,15 @@ class HomeFragment : Fragment() {
                 launch {
                     viewModel.totalCalories.collect { total ->
                         binding.calorieCount.text = total.toString()
-                        val progress = (total.toFloat() / 2000f).coerceIn(0f, 1f)
+                    }
+                }
+                launch {
+                    viewModel.targetCalories.collect { target ->
+                        val total = binding.calorieCount.text.toString().toIntOrNull() ?: 0
+                        val progress = (total.toFloat() / target.toFloat()).coerceIn(0f, 1f)
                         binding.calorieProgress.progress = (progress * 100).toInt()
                         binding.caloriePercent.text = "${(progress * 100).toInt()}%"
+                        binding.calorieTarget.text = "of $target kcal"
                     }
                 }
             }

@@ -60,11 +60,22 @@ class ScannerFragment : Fragment() {
         }
 
         binding.captureButton.setOnClickListener {
+            binding.manualInputPrompt.visibility = View.GONE
             imageCapture?.let { ic ->
                 captureImage(ic) { bitmap ->
                     viewModel.onImageCaptured(bitmap)
                 }
             }
+        }
+
+        binding.manualAddButton.setOnClickListener {
+            val foodName = viewModel.lastCapturedFoodName.ifEmpty { "Unknown" }
+            val args = Bundle().apply {
+                putString("foodName", foodName)
+            }
+            findNavController().navigate(R.id.manualInputFragment, args)
+            binding.manualInputPrompt.visibility = View.GONE
+            viewModel.clearCapture()
         }
 
         if (PermissionChecker.checkSelfPermission(
@@ -98,15 +109,10 @@ class ScannerFragment : Fragment() {
                                 findNavController().navigate(
                                     R.id.resultFragment, args
                                 )
+                                viewModel.clearCapture()
                             } else {
-                                val args = Bundle().apply {
-                                    putString("foodName", it.foodName)
-                                }
-                                findNavController().navigate(
-                                    R.id.manualInputFragment, args
-                                )
+                                binding.manualInputPrompt.visibility = View.VISIBLE
                             }
-                            viewModel.clearCapture()
                         }
                     }
                 }
@@ -151,7 +157,9 @@ class ScannerFragment : Fragment() {
                 override fun onCaptureSuccess(image: ImageProxy) {
                     val bitmap = imageProxyToBitmap(image)
                     image.close()
-                    onBitmap(bitmap)
+                    if (bitmap != null) {
+                        onBitmap(bitmap)
+                    }
                 }
 
                 override fun onError(exception: ImageCaptureException) {
@@ -161,15 +169,20 @@ class ScannerFragment : Fragment() {
         )
     }
 
-    private fun imageProxyToBitmap(image: ImageProxy): Bitmap {
-        val buffer: ByteBuffer = image.planes[0].buffer
-        val bytes = ByteArray(buffer.remaining())
-        buffer.get(bytes)
-        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-        val matrix = Matrix().apply {
-            postRotate(image.imageInfo.rotationDegrees.toFloat())
+    private fun imageProxyToBitmap(image: ImageProxy): Bitmap? {
+        return try {
+            val buffer: ByteBuffer = image.planes[0].buffer
+            val bytes = ByteArray(buffer.remaining())
+            buffer.get(bytes)
+            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
+            val matrix = Matrix().apply {
+                postRotate(image.imageInfo.rotationDegrees.toFloat())
+            }
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }
 
     override fun onDestroyView() {

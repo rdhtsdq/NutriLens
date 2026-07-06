@@ -47,8 +47,8 @@ class ManualInputFragment : Fragment() {
             val sugar = binding.sugarInput.text?.toString()?.toDoubleOrNull() ?: 0.0
 
             viewModel.saveFood(foodName, calories, sugar, "LOW") {
-                findNavController().navigate(R.id.homeFragment) {
-                    popUpTo(R.id.homeFragment) { inclusive = true }
+                if (isAdded) {
+                    findNavController().popBackStack(R.id.homeFragment, false)
                 }
             }
         }

@@ -12,4 +12,5 @@ sealed class Screen(val route: String, val label: String) {
         fun createRoute(foodName: String): String =
             "manual_input/$foodName"
     }
+    data object Settings : Screen("settings", "Settings")
 }

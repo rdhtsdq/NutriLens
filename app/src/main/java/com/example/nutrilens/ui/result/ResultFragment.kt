@@ -65,9 +65,7 @@ class ResultFragment : Fragment() {
                     )
                 )
                 if (isAdded) {
-                    findNavController().navigate(R.id.homeFragment) {
-                        popUpTo(R.id.homeFragment) { inclusive = true }
-                    }
+                    findNavController().popBackStack(R.id.homeFragment, false)
                 }
             }
         }

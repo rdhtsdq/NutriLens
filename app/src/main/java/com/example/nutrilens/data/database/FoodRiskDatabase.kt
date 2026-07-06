@@ -13,7 +13,7 @@ import com.example.nutrilens.data.entity.UserProfileEntity
 
 @Database(
     entities = [UserProfileEntity::class, FoodLogEntity::class, AchievementEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class FoodRiskDatabase : RoomDatabase() {

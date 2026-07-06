@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.nutrilens.data.database.FoodRiskDatabase
 import com.example.nutrilens.data.entity.FoodLogEntity
 import com.example.nutrilens.data.repository.FoodRepository
+import com.example.nutrilens.data.repository.ProfileRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -15,8 +16,12 @@ import java.util.Calendar
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = FoodRepository(
+    private val foodRepository = FoodRepository(
         FoodRiskDatabase.getInstance(application).foodLogDao()
+    )
+
+    private val profileRepository = ProfileRepository(
+        FoodRiskDatabase.getInstance(application).userProfileDao()
     )
 
     private val todayStart: Long
@@ -32,11 +37,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val todayEnd: Long
         get() = todayStart + 24 * 60 * 60 * 1000
 
-    val todayFoods: StateFlow<List<FoodLogEntity>> = repository
+    val targetCalories: StateFlow<Int> = profileRepository
+        .observeProfile()
+        .map { it?.targetCalories ?: 2000 }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 2000)
+
+    val todayFoods: StateFlow<List<FoodLogEntity>> = foodRepository
         .getTodayFoods(todayStart, todayEnd)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val totalCalories: StateFlow<Int> = repository
+    val totalCalories: StateFlow<Int> = foodRepository
         .getTotalCaloriesToday(todayStart, todayEnd)
         .map { it ?: 0 }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
@@ -53,7 +63,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun deleteFood(foodLog: FoodLogEntity) {
         viewModelScope.launch {
-            repository.deleteFood(foodLog)
+            foodRepository.deleteFood(foodLog)
         }
     }
 }

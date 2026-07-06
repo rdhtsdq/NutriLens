@@ -231,6 +231,21 @@ class NutritionEngine {
         "soba" to NutritionInfo(130, 1.0)
     )
 
+    fun has(foodName: String): Boolean {
+        val normalized = foodName.trim().lowercase()
+        if (foodDatabase.containsKey(normalized)) return true
+        for (key in foodDatabase.keys) {
+            if (normalized.contains(key) || key.contains(normalized)) return true
+        }
+        val words = normalized.split(" ")
+        for (key in foodDatabase.keys) {
+            for (word in words) {
+                if (word == key || key.contains(word) && word.length > 2) return true
+            }
+        }
+        return false
+    }
+
     fun estimate(foodName: String): NutritionInfo {
         val normalized = foodName.trim().lowercase()
 

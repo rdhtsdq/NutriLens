@@ -27,8 +27,8 @@ data class CapturedImage(
 
 class ScannerViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val geminiRecognizer = GeminiFoodRecognizer()
-    private val mlKitRecognizer = FoodRecognizer()
+    private val geminiRecognizer by lazy { GeminiFoodRecognizer() }
+    private val mlKitRecognizer by lazy { FoodRecognizer() }
     private val nutritionEngine = NutritionEngine()
     private val riskCalculator = HealthRiskCalculator()
 
@@ -37,6 +37,17 @@ class ScannerViewModel(application: Application) : AndroidViewModel(application)
 
     private val _isProcessing = MutableStateFlow(false)
     val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
+
+    var lastCapturedFoodName: String = ""
+        private set
+
+    private val genericLabels = setOf(
+        "food", "dish", "meal", "cuisine", "snack", "ingredient",
+        "plate", "bowl", "table", "top", "background", "pattern",
+        "breakfast", "lunch", "dinner", "appetizer", "dessert",
+        "baked goods", "pastry", "baking", "cooking", "recipe",
+        "produce", "grocery", "market", "restaurant", "menu",
+    )
 
     fun onImageCaptured(bitmap: Bitmap) {
         viewModelScope.launch {
@@ -51,19 +62,30 @@ class ScannerViewModel(application: Application) : AndroidViewModel(application)
             val result = if (geminiResult.isRecognized) {
                 geminiResult
             } else {
-                mlKitRecognizer.recognize(bitmap)
+                try {
+                    mlKitRecognizer.recognize(bitmap)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    FoodRecognitionResult("Unknown", 0f, false)
+                }
             }
 
-            val nutrition = if (result.isRecognized) {
+            val isValid = result.isRecognized &&
+                result.foodName !in genericLabels &&
+                nutritionEngine.has(result.foodName)
+
+            val nutrition = if (isValid) {
                 nutritionEngine.estimate(result.foodName)
             } else {
                 NutritionInfo(0, 0.0)
             }
-            val riskLevel = if (result.isRecognized) {
+            val riskLevel = if (isValid) {
                 riskCalculator.calculate(nutrition.calories, nutrition.sugar)
             } else {
                 "UNKNOWN"
             }
+
+            lastCapturedFoodName = result.foodName
 
             _capturedImage.value = CapturedImage(
                 bitmap = bitmap,
@@ -72,7 +94,7 @@ class ScannerViewModel(application: Application) : AndroidViewModel(application)
                 calories = nutrition.calories,
                 sugar = nutrition.sugar,
                 riskLevel = riskLevel,
-                isRecognized = result.isRecognized
+                isRecognized = isValid
             )
 
             _isProcessing.value = false
@@ -81,5 +103,6 @@ class ScannerViewModel(application: Application) : AndroidViewModel(application)
 
     fun clearCapture() {
         _capturedImage.value = null
+        lastCapturedFoodName = ""
     }
 }
